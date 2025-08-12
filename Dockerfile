@@ -1,9 +1,9 @@
 FROM python:3.12-slim
 
-LABEL maintainer="YOUR NAME <you@example.com>" \
+LABEL maintainer="Zachary Farrow <farrow.zachary@gmail.com>" \
       org.opencontainers.image.title="Postgres Multi-DB Bootstrap" \
       org.opencontainers.image.description="Idempotent sidecar that provisions multiple Postgres databases and roles on startup." \
-      org.opencontainers.image.source="https://github.com/YOUR_GITHUB/pg-multi-db-bootstrap" \
+      org.opencontainers.image.source="https://github.com/WildcatZack/pg-multi-db-bootstrap" \
       org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
