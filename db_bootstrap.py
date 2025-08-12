@@ -74,8 +74,11 @@ def ensure_role(cur, role: str, password: str, dry_run: bool, ensure_password: b
             if dry_run:
                 log("INFO", f"[dry-run] would ALTER ROLE {role} WITH PASSWORD *****")
             else:
-                q = sql.SQL("ALTER ROLE {} WITH PASSWORD %s;").format(sql.Identifier(role))
-                cur.execute(q, (password,))
+                q = sql.SQL("ALTER ROLE {} WITH PASSWORD {};").format(
+                    sql.Identifier(role),
+                    sql.Literal(password)
+                )
+                cur.execute(q)
                 log("INFO", f"password ensured for role: {role}")
         return
 
@@ -83,8 +86,12 @@ def ensure_role(cur, role: str, password: str, dry_run: bool, ensure_password: b
         log("INFO", f"[dry-run] would CREATE ROLE {role} LOGIN PASSWORD *****")
         return
 
-    q = sql.SQL("CREATE ROLE {} LOGIN PASSWORD %s;").format(sql.Identifier(role))
-    cur.execute(q, (password,))
+    # NOTE: Postgres doesn't accept bind params for PASSWORD; use a literal
+    q = sql.SQL("CREATE ROLE {} LOGIN PASSWORD {};").format(
+        sql.Identifier(role),
+        sql.Literal(password)
+    )
+    cur.execute(q)
     log("INFO", f"role created: {role}")
 
 def ensure_db(super_conn, super_cur, name: str, owner: str, dry_run: bool):
@@ -94,7 +101,10 @@ def ensure_db(super_conn, super_cur, name: str, owner: str, dry_run: bool):
         else:
             # CREATE DATABASE must be outside a transaction
             super_conn.autocommit = True
-            q = sql.SQL("CREATE DATABASE {} OWNER {};").format(sql.Identifier(name), sql.Identifier(owner))
+            q = sql.SQL("CREATE DATABASE {} OWNER {};").format(
+                sql.Identifier(name),
+                sql.Identifier(owner)
+            )
             super_cur.execute(q)
             log("INFO", f"database created: {name} (owner {owner})")
     else:
@@ -102,7 +112,10 @@ def ensure_db(super_conn, super_cur, name: str, owner: str, dry_run: bool):
         if dry_run:
             log("INFO", f"[dry-run] would ALTER DATABASE {name} OWNER TO {owner}")
         else:
-            q = sql.SQL("ALTER DATABASE {} OWNER TO {};").format(sql.Identifier(name), sql.Identifier(owner))
+            q = sql.SQL("ALTER DATABASE {} OWNER TO {};").format(
+                sql.Identifier(name),
+                sql.Identifier(owner)
+            )
             super_cur.execute(q)
 
     if dry_run:
@@ -127,7 +140,6 @@ def ensure_db(super_conn, super_cur, name: str, owner: str, dry_run: bool):
             cur.execute(sql.SQL("GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {};").format(sql.Identifier(owner)))
             cur.execute(sql.SQL("GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO {};").format(sql.Identifier(owner)))
             cur.execute(sql.SQL("GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO {};").format(sql.Identifier(owner)))
-            # Note: default privileges are not set here; owner already controls future objects.
     log("INFO", f"ownership & grants ensured in db: {name}")
 
 def sanitize_names(names: list[str]) -> list[str]:
